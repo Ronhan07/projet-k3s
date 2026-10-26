@@ -1,0 +1,55 @@
+---
+# 1. NETTOYAGE ET PRÉPARATION DES 3 NŒUDS
+- name: Préparation et sécurisation des nœuds du cluster
+  hosts: k3s_cluster
+  become: true
+  tasks:
+    - name: Désactiver le Swap (Obligatoire pour Kubernetes)
+      command: swapoff -a
+
+    - name: S'assurer que le Swap reste désactivé au redémarrage
+      replace:
+        path: /etc/fstab
+        regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+        replace: '# \1'
+
+    - name: Installer les dépendances OS de base
+      apt:
+        name: [curl, open-iscsi]
+        state: present
+        update_cache: yes
+
+# 2. INSTALLATION ET INITIALISATION DU MASTER K3S
+- name: Initialisation du Control Plane (Master)
+  hosts: master
+  become: true
+  tasks:
+    - name: Installer K3s Server sur le Master
+      shell: curl -sfL https://get.k3s.io | sh -
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Attendre la génération du Token K3s
+      wait_for:
+        path: /var/lib/rancher/k3s/server/node-token
+        timeout: 30
+
+    - name: Extraire le Token de jonction
+      slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_token_base64
+
+    - name: Définir la variable token en mémoire
+      set_fact:
+        k3s_token: "{{ k3s_token_base64.content | b64decode | trim }}"
+
+# 3. JONCTION DES 2 WORKERS
+- name: Connexion des Nœuds Workers au Cluster
+  hosts: workers
+  become: true
+  tasks:
+    - name: Installer K3s Agent et rejoindre le Master
+      shell: |
+        curl -sfL https://get.k3s.io | K3S_URL=https://{{ hostvars['k3s-master']['ansible_host'] }}:6443 K3S_TOKEN={{ hostvars['k3s-master']['k3s_token'] }} sh -
+      args:
+        creates: /usr/local/bin/k3s-agent

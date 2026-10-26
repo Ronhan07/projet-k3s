@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: linuxwatch
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: linuxwatch
+  template:
+    metadata:
+      labels:
+        app: linuxwatch
+    spec:
+      containers:
+      - name: linuxwatch-backend
+        image: linuxwatch-backend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PORT
+          value: "3000"
+        - name: HOST
+          value: "0.0.0.0"
+        - name: CLIENT_URLS
+          value: "*"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: linuxwatch-service
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: linuxwatch
+  ports:
+  - port: 80
+    targetPort: 3000

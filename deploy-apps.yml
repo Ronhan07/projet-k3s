@@ -1,0 +1,16 @@
+---
+- name: Déploiement des applications web sur K3s
+  hosts: master
+  become: true
+  tasks:
+    - name: Copier le manifeste des applications
+      copy:
+        src: apps.yml
+        dest: /tmp/apps.yml
+        mode: '0644'
+
+    - name: Appliquer le manifeste via kubectl
+      command: kubectl apply -f /tmp/apps.yml
+
+    - name: Attendre que le déploiement web soit disponible
+      command: kubectl rollout status deployment/web-demo -n demo-apps --timeout=60s

@@ -1,0 +1,25 @@
+---
+# 1. EMETTEUR DE CERTIFICATS AUTO-SIGNÉS / CA (Idéal pour IP locale / Lab)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+
+---
+# 2. EMETTEUR LET'S ENCRYPT STAGING (Si tu as un nom de domaine public pointant sur l'IP)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: admin@example.com
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+    - http01:
+        ingress:
+          class: traefik

@@ -1,0 +1,29 @@
+---
+- name: Installation de cert-manager et configuration TLS
+  hosts: master
+  become: true
+  tasks:
+    - name: Appliquer les CRDs et cert-manager officiel
+      command: kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml
+
+    - name: Attendre que le déploiement cert-manager soit prêt
+      command: kubectl rollout status deployment/cert-manager -n cert-manager --timeout=180s
+
+    - name: Attendre que le webhook cert-manager soit prêt
+      command: kubectl rollout status deployment/cert-manager-webhook -n cert-manager --timeout=180s
+
+    - name: Attendre que le cainjector cert-manager soit prêt
+      command: kubectl rollout status deployment/cert-manager-cainjector -n cert-manager --timeout=180s
+
+    - name: Laisser un délai de sécurité pour la propagation du Webhook
+      pause:
+        seconds: 10
+
+    - name: Copier le manifeste des Issuers
+      copy:
+        src: cert-manager-setup.yml
+        dest: /tmp/cert-manager-setup.yml
+        mode: '0644'
+
+    - name: Appliquer les ClusterIssuers
+      command: kubectl apply -f /tmp/cert-manager-setup.yml

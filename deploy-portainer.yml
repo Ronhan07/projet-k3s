@@ -1,0 +1,54 @@
+---
+- name: Déploiement et Initialisation automatisés de Portainer CE
+  hosts: master
+  become: true
+  vars:
+    portainer_admin_password: "Kubernetes69!" # Mot de passe admin
+
+  tasks:
+    - name: Copier le manifeste portainer.yml sur le Master
+      copy:
+        src: portainer.yml
+        dest: /tmp/portainer.yml
+        mode: '0644'
+
+    - name: Appliquer le manifeste Portainer via kubectl
+      command: kubectl apply -f /tmp/portainer.yml
+
+    - name: Attendre que le Pod Portainer soit prêt
+      command: kubectl wait --namespace=portainer --for=condition=Ready pod -l app=portainer --timeout=120s
+
+    # --- NOUVEAU : Redémarrer le pod pour réinitialiser le minuteur de sécurité de 5 minutes ---
+    - name: Redémarrer le déploiement Portainer pour rafraîchir le timer de sécurité
+      command: kubectl rollout restart deployment/portainer -n portainer
+
+    - name: Attendre à nouveau que le Pod Portainer soit prêt après redémarrage
+      command: kubectl wait --namespace=portainer --for=condition=Ready pod -l app=portainer --timeout=120s
+
+    - name: Attendre que Portainer réponde via Traefik
+      uri:
+        url: "http://127.0.0.1/"
+        status_code: [200, 400, 401, 409,  502]
+      register: result
+      until: result.status in [200, 400, 401, 409]
+      retries: 15
+      delay: 3
+
+    - name: Initialiser automatiquement le compte Administrateur Portainer via l'API
+      uri:
+        url: "http://127.0.0.1/api/users/admin/init"
+        method: POST
+        body_format: json
+        body:
+          Username: "admin"
+          Password: "{{ portainer_admin_password }}"
+        status_code: [200, 409, 502] # 200 = créé avec succès, 409 = déjà initialisé
+      register: portainer_init
+      until: portainer_init.status in [200, 409] # On boucle jusqu'à ce que l'API réponde avec succès
+      retries: 15
+      delay: 3
+      failed_when: portainer_init.status not in [200, 409]
+
+    - name: Afficher la confirmation d'initialisation
+      debug:
+        msg: "Portainer a été initialisé avec succès ! Identifiant: admin / Mot de passe: {{ portainer_admin_password }}"

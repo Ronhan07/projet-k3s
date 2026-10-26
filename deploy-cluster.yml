@@ -1,0 +1,22 @@
+---
+# ==========================================
+# MASTER PLAYBOOK - DÉPLOIEMENT AUTOMATISÉ K3S
+# ==========================================
+
+# 1. Sécurisation initiale du réseau et pare-feu
+- import_playbook: setup-firewall.yml
+
+# 2. Préparation des OS et initialisation du cluster (Master + Workers)
+- import_playbook: site.yml
+
+# 3. Déploiement des composants transverses (Cert-Manager, Ingress)
+- import_playbook: deploy-certmanager.yml
+
+# 4. Déploiement des outils d'administration (Portainer)
+- import_playbook: deploy-portainer.yml
+
+# 5. Déploiement des applications métiers
+- import_playbook: deploy-apps.yml
+
+# 6. Application des politiques de sécurité (RBAC & Network Policies)
+- import_playbook: deploy-security.yml

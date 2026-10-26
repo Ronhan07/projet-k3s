@@ -1,0 +1,13 @@
+---
+- name: Déploiement sécurisé de WordPress
+  hosts: master
+  become: true
+  tasks:
+    - name: Appliquer le template Jinja2 du manifeste
+      template:
+        src: wordpress.yml
+        dest: /tmp/wordpress.yml
+        mode: '0644'
+
+    - name: Appliquer le manifeste via kubectl
+      command: kubectl apply -f /tmp/wordpress.yml

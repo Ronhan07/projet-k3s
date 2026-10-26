@@ -1,0 +1,39 @@
+---
+- name: Configuration et sécurisation du pare-feu UFW sur tout le cluster K3s
+  hosts: all
+  become: true
+  tasks:
+    - name: S'assurer que UFW est installé
+      apt:
+        name: ufw
+        state: present
+        update_cache: yes
+
+    - name: Rejeter tout le trafic entrant par défaut
+      ufw:
+        direction: incoming
+        default: deny
+
+    - name: Autoriser tout le trafic sortant par défaut
+      ufw:
+        direction: outgoing
+        default: allow
+
+    - name: Autoriser les accès de gestion communs (SSH & Web Traefik)
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - 22    # SSH
+        - 80    # HTTP (Ingress Traefik)
+        - 443   # HTTPS (Ingress Traefik)
+
+    - name: Autoriser la communication interne du cluster K3s (Master & Workers)
+      ufw:
+        rule: allow
+        src: 192.168.69.0/24 # Plage réseau locale de tes VMs
+
+    - name: Activer le service UFW
+      ufw:
+        state: enabled
