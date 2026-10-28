@@ -29,10 +29,11 @@
         - 80    # HTTP (Ingress Traefik)
         - 443   # HTTPS (Ingress Traefik)
 
-    - name: Autoriser la communication interne du cluster K3s (Master & Workers)
+    - name: Autoriser dynamiquement la communication inter-nœuds du cluster K3s
       ufw:
         rule: allow
-        src: 192.168.69.0/24 # Plage réseau locale de tes VMs
+        src: "{{ hostvars[item]['ansible_host'] }}"
+      loop: "{{ query('inventory_hostnames', 'k3s_cluster') }}"
 
     - name: Activer le service UFW
       ufw:

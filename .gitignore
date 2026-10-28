@@ -1,9 +1,16 @@
-# Clés et certificats sensibles
-*.key
-*.crt
-.vault-pass.txt
+# Fichiers d'inventaire et configuration locale générés dynamiquement
+inventory.ini
 
-# Fichiers système et IDE
+# Fichiers de secrets et de mots de passe
+.vault-pass.txt
+*.vault
+
+# Clés SSH locales
+.ssh/
+id_rsa
+id_rsa.pub
+
+# Fichiers temporaires Ansible et système
+.ansible/
+*.retry
 .DS_Store
-*~
-.vscode/

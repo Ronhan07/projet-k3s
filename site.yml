@@ -50,6 +50,6 @@
   tasks:
     - name: Installer K3s Agent et rejoindre le Master
       shell: |
-        curl -sfL https://get.k3s.io | K3S_URL=https://{{ hostvars['k3s-master']['ansible_host'] }}:6443 K3S_TOKEN={{ hostvars['k3s-master']['k3s_token'] }} sh -
+        curl -sfL https://get.k3s.io | K3S_URL=https://{{ hostvars[groups['master'][0]]['ansible_host'] }}:6443 K3S_TOKEN={{ hostvars[groups['master'][0]]['k3s_token'] }} sh -
       args:
         creates: /usr/local/bin/k3s-agent

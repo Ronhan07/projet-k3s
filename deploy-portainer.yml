@@ -3,7 +3,7 @@
   hosts: master
   become: true
   vars:
-    portainer_admin_password: "Kubernetes69!" # Mot de passe admin
+    portainer_admin_password: "{{ portainer_admin_password | default('Kubernetes69!') }}" # Mot de passe admin
 
   tasks:
     - name: Copier le manifeste portainer.yml sur le Master
